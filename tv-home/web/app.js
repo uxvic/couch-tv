@@ -164,6 +164,7 @@
   var retryTimer = null, retryMs = 2500, statusTimer = null;
   var pmi = 0, plift = false;        // the people list: focused row, and whether that row is picked up
   var lift = null;                   // the dock app picked up to move: {pkg}
+  var arranging = false;             // Settings, Arrange apps: OK picks dock apps up instead of opening them
   var newApps = [];                  // apps installed since this TV first saw its apps, until opened once
 
   function setPeople(list) {
@@ -699,7 +700,7 @@
     if (NIGHT) {
       // the row shows while someone has a show on the go, or while a song plays
       var anyone = PEOPLE.some(function (p) { return (data.showsBy[p.id] || []).length; });
-      $("shelf-section").classList.toggle("empty", !anyone && !on);
+      $("shelf-section").classList.toggle("empty", !(anyone && kwOn()) && !on);
       $("np-slot").classList.toggle("on", on);
     }
     if (!on) { el.innerHTML = ""; return; }
@@ -1052,8 +1053,17 @@
 
   // Keep watching shows up to ten per person; the row slides along under the remote.
   var KEEP_MAX = 10;
+  function kwOn() { return ST.keep_watching !== false; }
   function renderShelf() {
     var track = $("shelf");
+    if (!kwOn()) {   // switched off in Home settings: no row, the photo has the space
+      data.shows = [];
+      $("shelf-section").classList.toggle("empty", !(NIGHT && npVisible()));
+      renderPeople();
+      track.innerHTML = "";
+      shelfEls = [];
+      return;
+    }
     data.shows = (data.showsBy[who] || []).slice(0, KEEP_MAX);
     var anyone = PEOPLE.some(function (p) { return (data.showsBy[p.id] || []).length; });
     // nobody has anything on the go: no empty box, the photo has the space (unless Now playing
@@ -1153,8 +1163,9 @@
     var arr = arrangeItems();
     var list = expanded ? arr.items.slice() : arr.items.slice(0, arr.line);
     if (expanded && store) list.unshift({ kind: "app", store: true, name: t("app_store"), package: STORE_PKG, id: store.id });
-    list = list.concat(toolItems());
+    // More apps sits with the apps; Settings (and Smart home) end the row
     if (!expanded) list.push(moreItem());
+    list = list.concat(toolItems());
     return list;
   }
 
@@ -1197,7 +1208,7 @@
   var hintTimer = null, hintFlash = "";
   function renderHint() {
     var text = hintFlash ||
-      (lift ? t("app_lift_hint") : NIGHT && expanded && zone === "grid" ? t("app_add_hint") : "");
+      (lift ? t("app_lift_hint") : arranging ? t("arrange_hint") : NIGHT && expanded && zone === "grid" ? t("app_add_hint") : "");
     $("hint").textContent = text;
     $("hint").classList.toggle("on", !!text);
     document.documentElement.classList.toggle("hinting", !!text);
@@ -1302,6 +1313,14 @@
     paintFocus();
     flash(msg);
     return true;
+  }
+  function arrangeOk() {
+    var a = gridItems[g];
+    if (!a) return;
+    if (a.kind === "more") { expanded = true; renderGrid(); g = 0; paintFocus(); return; }
+    if (a.kind !== "app" || a.store) { flash(t("stays_put", { name: a.name })); return; }
+    if (expanded) { startMove(); return; }   // from More apps: onto the home row
+    startMove();
   }
   function moveLift(dx, dy) {
     var o = data.order, i = o.packages.indexOf(lift.pkg);
@@ -1520,11 +1539,13 @@
     touched = true;
     if (zone === "settings") { setMove(dx, dy); return; }
     if (zone === "smart") { window.smartHome.move(dx, dy); return; }
-    if (zone === "gear") { if (dy) { gi = Math.max(0, Math.min(1, gi + dy)); renderGear(); } return; }
+    if (zone === "gear") { if (dy) { gi = Math.max(0, Math.min(gearItems().length - 1, gi + dy)); renderGear(); } return; }
     if (zone === "appmenu") { if (dy) { amI = Math.max(0, Math.min(amItems.length - 1, amI + dy)); renderAppMenu(); } return; }
     if (zone === "updask") { if (dy) { ai = Math.max(0, Math.min(1, ai + dy)); renderAsk(); } return; }
     if (zone === "inputs") { if (dy) { inI = Math.max(0, Math.min(inItems.length - 1, inI + dy)); renderInputMenu(); } return; }
     if (lift) { moveLift(dx, dy); return; }
+    // arranging on the home row: left and right along the dock only
+    if (arranging && !expanded) { if (dx) { g = Math.max(0, Math.min(gridEls.length - 1, g + dx)); paintFocus(); } return; }
     // Night with More apps open: the cards step aside, so up and down skip them
     var cards = NIGHT && expanded ? [] : shelfEls;
     if (zone === "menu") {
@@ -1626,6 +1647,8 @@
     if (zone === "appmenu") { closeAppMenu(); paintFocus(); return; }
     if (zone === "updask") { answerAsk(false); return; }   // BACK counts as "I'll check myself"
     if (lift) { dropLift(); return; }   // BACK puts a picked-up app down where it is
+    if (arranging && expanded) { expanded = false; renderGrid(); g = 0; paintFocus(); return; }
+    if (arranging) { endArrange(); return; }
     if (zone === "pmenu") { if (plift) dropPeople(); else closePop(); paintFocus(); return; }
     if (zone === "menu") { closeMenu(); paintFocus(); return; }   // BACK just closes the sleep choices
     if (zone === "inputs") { closeInputMenu(); paintFocus(); return; }
@@ -1655,10 +1678,11 @@
     touched = true;
     if (zone === "settings") { setActivate(); return; }
     if (zone === "smart") { window.smartHome.ok(); return; }
-    if (zone === "gear") { if (gi === 0) openSettings(); else openTvSettings(); return; }
+    if (zone === "gear") { var gk = gearItems()[gi][3]; if (gk === "arrange") startArrange(); else if (gk === "home") openSettings(); else openTvSettings(); return; }
     if (zone === "appmenu") { doAppMenu(); return; }
     if (zone === "updask") { answerAsk(ai === 0); return; }
     if (lift) { dropLift(); return; }
+    if (arranging && zone === "grid") { arrangeOk(); return; }
     if (zone === "menu") { setSleep(SLEEP_CHOICES[menuI]); paintFocus(); return; }
     if (zone === "inputs") { doInputMenu(); paintFocus(); return; }
     if (zone === "np") { npPress(); return; }
@@ -1723,14 +1747,38 @@
 
   // ---------------- the gear tile's menu: Home settings or the TV's own settings ----------------
   var gi = 0;
+  // Night: Arrange apps first (it used to hide behind a long press of OK), then Home and TV settings
+  function gearItems() {
+    var items = [[ICONS.sliders, t("gear_home"), updReady() ? t("upd_gear", { v: UPD.latest }) : t("gear_home_sub"), "home"],
+      [ICONS.gear, t("gear_tv"), t("gear_tv_sub"), "tv"]];
+    if (NIGHT) items.unshift([ICONS.updown, t("arrange_apps"), t("arrange_apps_sub"), "arrange"]);
+    return items;
+  }
+  function startArrange() {
+    closeGear();
+    materialise();
+    expanded = false; lift = null; arranging = true;
+    document.documentElement.classList.add("arranging");
+    renderGrid();
+    g = 0; zone = "grid";
+    paintFocus();
+  }
+  function endArrange() {
+    arranging = false; lift = null;
+    document.documentElement.classList.remove("arranging");
+    if (expanded) expanded = false;
+    persistOrder();
+    renderGrid();
+    paintFocus();
+    flash(t("arrange_done"));
+  }
   function openGear() {
     zone = "gear"; gi = 0;
     renderGear();
   }
   function renderGear() {
     var pop = $("gear-pop");
-    var items = [[ICONS.sliders, t("gear_home"), updReady() ? t("upd_gear", { v: UPD.latest }) : t("gear_home_sub")],
-      [ICONS.gear, t("gear_tv"), t("gear_tv_sub")]];
+    var items = gearItems();
     pop.innerHTML = items.map(function (it, i) {
       return '<div class="grow' + (i === gi ? " focus" : "") + '" role="menuitem"><i>' + it[0] + "</i><span><b>" + esc(it[1]) +
         "</b><small>" + esc(it[2]) + "</small></span></div>";
@@ -2013,6 +2061,10 @@
       rows.push({ kind: "choice", key: "look:" + id, label: t("look_" + id), sub: t("look_" + id + "_sub"), checked: look === id,
         act: function () { ST.look = id; keep("tvhome.look", id); saveSettings(); } });
     });
+    rows.push(head(t("keep_watching")));
+    rows.push({ kind: "toggle", key: "keep-watching", label: t("kw_switch"), value: kwOn() ? t("on") : t("off"), act: function () {
+      ST.keep_watching = !kwOn(); saveSettings(); renderShelf();
+    } });
     rows.push(head(t("scenes_head")));
     st.order.forEach(function (id) {
       var sc = sceneById(id);

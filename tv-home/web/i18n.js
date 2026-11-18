@@ -99,6 +99,11 @@
     gear_home_sub: "Language, weather, scenes, apps and people",
     gear_tv: "TV settings",
     gear_tv_sub: "Wi-Fi, picture, sound and the rest of the TV",
+    arrange_apps: "Arrange apps",
+    arrange_apps_sub: "Move, add or remove the apps on the home row",
+    arrange_hint: "OK picks an app up. More apps adds one. Back when you're done",
+    arrange_done: "Apps arranged",
+    kw_switch: "Show Keep watching",
     tv_settings_none: "This TV's own settings could not be opened.",
 
     // ---- the settings screen ----

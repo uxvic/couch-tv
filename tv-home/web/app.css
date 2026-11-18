@@ -394,6 +394,8 @@ body {
 .theme-night .app.lifted .face { animation: wiggle 0.32s ease-in-out infinite alternate; box-shadow: 0 0 0 0.25rem #fff, 0 1.75rem 3rem rgba(0, 0, 0, 0.55); }
 .theme-night .app.lifted .face img { filter: none; }
 .theme-night.lifting .app:not(.lifted) .face { opacity: 0.7; }
+.theme-night.arranging .app.dock-ic:not(.lifted) .face { box-shadow: 0 0 0 0.15rem rgba(255, 255, 255, 0.5); }
+.theme-night.arranging .shelf { opacity: 0; }
 /* while an app is moved (or a hint shows over the dock) the cards step aside, so the hint has the space */
 .theme-night .shelf { transition: opacity 240ms var(--ease); }
 .theme-night.lifting .shelf, .theme-night.hinting .shelf { opacity: 0; }
