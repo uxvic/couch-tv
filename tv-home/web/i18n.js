@@ -193,6 +193,7 @@
     hint_slider: "Left and right to change, Back to go back",
     clock_liquid: "Liquid glass",
     clock_frosted: "Frosted",
+    clock_solid: "Solid, in the corner",
     clock_style: "Clock style",
     glass_amount_note: "How clear sets how much of the background shows through the glass, the clock and the app icons, from frosted to very clear.",
     glass_amt_5: "Very clear",

@@ -928,3 +928,25 @@ body {
 .theme-night .np-t small { font-size: 1.25rem; line-height: 1.625rem; }
 .theme-night.gearing .np-slot, .theme-night.apping .np-slot { opacity: 0; }
 .no-flex-gap.theme-night .shelf-row > * + * { margin-left: 1.375rem; }
+
+/* ================= Solid clock (Home settings, Clock style: Solid; home.clock_style "solid") =================
+   A plain white clock in the top-left corner, about 15% of the screen height (the digits' ink is 0.92 of
+   the font size), the date above it, so most of the photo shows. Wins over each scene's own clock place. */
+.clock-solid .scene .gclock {
+  left: 6rem !important; right: auto !important; top: 10.5rem !important; text-align: left !important;
+  font-size: 11rem !important; font-weight: 400;
+  filter: drop-shadow(0 0.25rem 1.25rem rgba(0, 0, 0, 0.35));
+}
+.clock-solid .scene .gclock .fill { color: #fff; background-image: none !important; filter: none !important; opacity: 1 !important; }
+.clock-solid .scene .gclock .rim, .clock-solid .scene .gclock .sheen, .clock-solid .scene .gclock.under { display: none; }
+.clock-solid.theme-night .date { left: 6.4rem !important; right: auto !important; top: 7.5rem !important; text-align: left !important; }
+.clock-solid.theme-night .date { color: #fff !important; text-shadow: 0 0.125rem 1rem rgba(0, 0, 0, 0.45) !important; }
+.clock-solid.theme-night .date .wx { color: rgba(255, 255, 255, 0.85) !important; }
+/* the pale fog scene: a dark clock reads better than white */
+.clock-solid .s-fog .gclock .fill { color: #16201d; }
+.clock-solid .s-fog .gclock { filter: none; }
+/* only a light shade behind the app row, and none over the sky, so the photo keeps its contrast */
+.clock-solid.theme-night .scrim { background: linear-gradient(180deg, rgba(0, 0, 0, 0) 68%, rgba(0, 0, 0, 0.38) 100%); }
+.clock-solid .s-mine .shade { background: none; }
+.clock-solid.scene-fog .date { color: #16201d !important; text-shadow: none !important; }
+.clock-solid.scene-fog .date .wx { color: rgba(22, 32, 29, 0.72) !important; }

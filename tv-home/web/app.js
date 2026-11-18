@@ -37,7 +37,7 @@
   // How clear the glass is, 1 (frosted) to 5 (very clear), and the Night clock's style ("frosted",
   // the photo's frosted copy, or "liquid", clear glass digits): Home settings, Look, else
   // home.glass_amount and home.clock_style (#25, #29).
-  var GLASS_AMT = 3, CLOCK_LIQUID = false;
+  var GLASS_AMT = 3, CLOCK_LIQUID = false, CLOCK_SOLID = false;
   // Home settings made on this TV with the gear tile (see "home settings" below). They win over
   // config.js. ST is the saved object; the rest are read from it in readConfig().
   var ST = {}, WX_SHOW = true, WX_F = false, WX_EVERY = 30, HIDDEN_TV = [];
@@ -220,6 +220,8 @@
     document.documentElement.classList.toggle("glass-icons", GLASS_ICONS);
     GLASS_AMT = glassAmount();
     CLOCK_LIQUID = (ST.clock_style || HOME.clock_style) === "liquid";
+    // solid: a smaller plain white clock in the top-left corner, so more of the photo shows
+    CLOCK_SOLID = (ST.clock_style || HOME.clock_style) === "solid";
     glassClasses();
     // a link set in Home settings wins over home.video_url; one from config.json alone means on
     VIDEO_URL = typeof ST.video_url === "string" ? ST.video_url : typeof HOME.video_url === "string" ? HOME.video_url : "";
@@ -253,6 +255,7 @@
     var r = document.documentElement;
     for (var i = 1; i <= 5; i++) r.classList.toggle("ga-" + i, GLASS_AMT === i);
     if (r.classList.contains("clock-liquid") !== CLOCK_LIQUID) { r.classList.toggle("clock-liquid", CLOCK_LIQUID); glassShown = ""; }
+    r.classList.toggle("clock-solid", CLOCK_SOLID);
   }
   function glassSetting() { var g = ST.glass || HOME.glass; return g === "on" || g === "lite" ? g : "off"; }
   // no clock in Home settings or config.json: the one usual for the language (24 hour in Italian and German)
@@ -2111,8 +2114,11 @@
     rows.push({ kind: "slider", key: "glass-amount", label: t("glass_amount"), value: t("glass_amt_" + GLASS_AMT), level: GLASS_AMT,
       adjust: function (dx) { setAmt(GLASS_AMT + dx); }, act: function () { setAmt(GLASS_AMT === 5 ? 1 : GLASS_AMT + 1); } });
     // the Night clock: frosted (the photo's frosted copy) or liquid glass (#25)
-    rows.push({ kind: "cycle", key: "clock-style", label: t("clock_style"), value: CLOCK_LIQUID ? t("clock_liquid") : t("clock_frosted"), act: function () {
-      CLOCK_LIQUID = !CLOCK_LIQUID; ST.clock_style = CLOCK_LIQUID ? "liquid" : "frosted"; glassClasses(); saveSettings();
+    // frosted, then liquid glass, then solid (small, white, in the corner)
+    rows.push({ kind: "cycle", key: "clock-style", label: t("clock_style"),
+      value: CLOCK_SOLID ? t("clock_solid") : CLOCK_LIQUID ? t("clock_liquid") : t("clock_frosted"), act: function () {
+      var next = CLOCK_SOLID ? "frosted" : CLOCK_LIQUID ? "solid" : "liquid";
+      CLOCK_LIQUID = next === "liquid"; CLOCK_SOLID = next === "solid"; ST.clock_style = next; glassClasses(); saveSettings();
     } });
     rows.push(info("glass-note", t("glass_note", { keep: t("keep_watching") }) + " " + t("glass_icons_note") + " " + t("glass_amount_note")));
     // the sound on every arrow and OK (#32): the TV's own, a softer one, or none
